@@ -9,6 +9,12 @@ sap.ui.define([
         // del destination "DestToSAP_QAS" (ruta mapeada en xs-app.json / ui5.yaml)
         _datosBasicosUrl: "/sap/opu/odata/sap/ZHCM_CERTIFICADOS_PERSONAL_WD_SRV/DatosBasicosCertLabSet",
 
+        // Años disponibles para el Certificado de Ingresos y Retenciones (CIR)
+        _aniosCirUrl: "/sap/opu/odata/sap/ZHCM_CERTIFICADOS_PERSONAL_WD_SRV/AnioCirSet",
+
+        // Certificado de Ingresos y Retenciones (CIR) en PDF
+        _certificadoCirUrl: "/sap/opu/odata/sap/ZHCM_CERTIFICADOS_PERSONAL_WD_SRV/CertificadoCIRSet",
+
         /**
          * Retorna la URL base de la app, respetando el subpath con el que fue
          * desplegada (html5-apps-repo / Work Zone), igual que en ccbcertlaborales.
@@ -30,6 +36,41 @@ sap.ui.define([
             var sUrl = this._getAppBase() + this._datosBasicosUrl + "('" + sId + "')";
 
             return this._executeGet(sUrl, { "$format": "json" });
+        },
+
+        /**
+         * Consulta los años disponibles para el Certificado de Ingresos y Retenciones (CIR)
+         * GET AnioCirSet?$format=json
+         * @returns {Promise<Array<{Anio: string, DescAnio: string}>>} Promise que resuelve con
+         * una colección plana que contiene únicamente los campos Anio y DescAnio de cada año
+         */
+        getYears: function () {
+            var sUrl = this._getAppBase() + this._aniosCirUrl;
+
+            return this._executeGet(sUrl, { "$format": "json" })
+                .then(function (oData) {
+                    var aResults = (oData && oData.d && oData.d.results) || [];
+                    return aResults.map(function (oItem) {
+                        return {
+                            Anio: oItem.Anio,
+                            DescAnio: oItem.DescAnio
+                        };
+                    });
+                });
+        },
+
+        /**
+         * Arma la URL del Certificado de Ingresos y Retenciones (CIR) en PDF, lista
+         * para abrir en una nueva pestaña (window.open) o usar como href de descarga.
+         * GET CertificadoCIRSet(Pernr='..',Anio='..')/$value
+         * @param {object} oParams - { Pernr, Anio }
+         * @returns {string} URL absoluta del certificado
+         */
+        getCertificadoCirUrl: function (oParams) {
+            var sKeys = "Pernr='" + oParams.Pernr + "'," +
+                "Anio='" + oParams.Anio + "'";
+
+            return this._getAppBase() + this._certificadoCirUrl + "(" + sKeys + ")/$value";
         },
 
         /**

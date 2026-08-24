@@ -24,6 +24,10 @@
 
                 <core:Title text="Parámetros del Certificado de Ingresos y Retenciones" />
 
+                <Label text="Año" />
+                <Select id="selAnio" items="{globalData>/aniosCir}">
+                    <core:Item key="{globalData>Anio}" text="{globalData>DescAnio}" />
+                </Select>
 
             </form:SimpleForm>
         </content>
