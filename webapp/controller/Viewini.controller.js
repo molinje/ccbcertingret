@@ -34,12 +34,15 @@ sap.ui.define([
                 return;
             }
 
-            var sUrl = this._oBackendService.getCertificadoCirUrl({
+            this._oBackendService.getCertificadoCingRet({
                 Pernr: sPernr,
                 Anio: sAnio
+            }).then((oBlob) => {
+                var sBlobUrl = URL.createObjectURL(oBlob);
+                window.open(sBlobUrl, "_blank");
+            }).catch((oError) => {
+                MessageBox.error(oError.message || "No fue posible generar el certificado.");
             });
-
-            window.open(sUrl, "_blank");
         }
     });
 });

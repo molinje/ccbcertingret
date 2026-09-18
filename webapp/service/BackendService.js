@@ -74,6 +74,24 @@ sap.ui.define([
         },
 
         /**
+         * Descarga el Certificado de Ingresos y Retenciones (CIR) en PDF ejecutando
+         * el GET contra el servicio, en lugar de solo construir la URL. Esto permite
+         * capturar y manejar los errores que retorne la ejecución (401, 404, 500,
+         * error de red, etc.) antes de exponer el archivo al usuario.
+         * GET CertificadoCIRSet(Pernr='..',Anio='..')/$value
+         * @param {object} oParams - { Pernr, Anio }
+         * @returns {Promise<Blob>} Promise que resuelve con el Blob del PDF
+         */
+        getCertificadoCingRet: function (oParams) {
+            var sKeys = "Pernr='" + oParams.Pernr + "'," +
+                "Anio='" + oParams.Anio + "'";
+
+            var sUrl = this._getAppBase() + this._certificadoCirUrl + "(" + sKeys + ")/$value";
+
+            return this._executeGetBlob(sUrl);
+        },
+
+        /**
          * Ejecuta una petición GET al servicio OData con parámetros en la query string
          * @param {string} sUrl - URL base del servicio
          * @param {object} [oParams] - Parámetros a enviar en la query string (opcional)
@@ -112,6 +130,52 @@ sap.ui.define([
                             status: xhr.status,
                             statusText: xhr.statusText,
                             response: xhr.responseText
+                        });
+                    }
+                };
+
+                xhr.onerror = function () {
+                    reject({
+                        error: "Network error",
+                        status: xhr.status,
+                        message: "Error de red al conectar con el servicio"
+                    });
+                };
+
+                xhr.send();
+            });
+        },
+
+        /**
+         * Ejecuta una petición GET esperando una respuesta binaria (p.ej. un PDF
+         * servido vía $value), manejando los mismos casos de error que _executeGet
+         * pero sin intentar parsear la respuesta como JSON.
+         * @param {string} sUrl - URL del recurso binario
+         * @returns {Promise<Blob>} Promise que resuelve con el Blob de la respuesta
+         * @private
+         */
+        _executeGetBlob: function (sUrl) {
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open("GET", sUrl, true);
+                xhr.responseType = "blob";
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        resolve(xhr.response);
+                    } else if (xhr.status === 401) {
+                        reject({
+                            error: "Authentication failed",
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            message: "El token de acceso es inválido o ha expirado"
+                        });
+                    } else {
+                        reject({
+                            error: "Service request failed",
+                            status: xhr.status,
+                            statusText: xhr.statusText,
+                            message: "No fue posible generar el certificado"
                         });
                     }
                 };
